@@ -168,4 +168,6 @@ Projektek:
   - l2l.Service
   - l2l.WebUI
 
-  
+# Használt rövidítések
+- ef: entity framework core code first
+- code: visual studio code
