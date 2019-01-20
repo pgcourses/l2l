@@ -1,17 +1,31 @@
 using System;
+using System.Data.SqlClient;
 using System.IO;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
 namespace l2l.Data.Model
 {
-    public class L2lDbContextFactory : IDesignTimeDbContextFactory<L2lDbContext>
+    public class L2lDbContextFactory : IDesignTimeDbContextFactory<L2lDbContext>, IDisposable
     {
-        public L2lDbContext CreateDbContext(string[] args)
-        {
-            var obuilder = new DbContextOptionsBuilder<L2lDbContext>();
+        private readonly string cn;
+        private readonly SqliteConnection connection = null;
 
+        public bool IsInMemoryDb()
+        {
+            var cb = new SqlConnectionStringBuilder(cn);
+            if (!cb.ContainsKey(GlobalStrings.DataSource))
+            {
+                throw new ArgumentException("missing property from ConnectionString: Data Source", "ConnectionString");
+            }
+            return GlobalStrings.SqlMemoryDb.Equals((string)cb[GlobalStrings.DataSource], 
+                                StringComparison.OrdinalIgnoreCase);
+        }
+
+        public L2lDbContextFactory()
+        {
             var basePath = Directory.GetCurrentDirectory();
             var environment = Environment.GetEnvironmentVariable(GlobalStrings.AspnetCoreEnvironment);
 
@@ -23,12 +37,35 @@ namespace l2l.Data.Model
                                 ;
 
             var config = cbuilder.Build();
+            cn = config.GetConnectionString(GlobalStrings.ConnectionName);
+            if (IsInMemoryDb())
+            {
+                connection = new SqliteConnection(cn);
+                connection.Open();
+            }
+        }
 
-            var cn = config.GetConnectionString(GlobalStrings.ConnectionName);
+        public L2lDbContext CreateDbContext(string[] args)
+        {
+            var obuilder = new DbContextOptionsBuilder<L2lDbContext>();
 
-            obuilder.UseSqlite(cn);
+            if (IsInMemoryDb())
+            {
+                obuilder.UseSqlite(connection);
+            }
+            else
+            {
+                obuilder.UseSqlite(cn);
+            }
 
             return new L2lDbContext(obuilder.Options);
+        }
+        public void Dispose()
+        {
+            if (connection != null)
+            {
+                connection.Dispose();
+            }
         }
     }
 }

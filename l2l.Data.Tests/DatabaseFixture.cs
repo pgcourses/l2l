@@ -1,5 +1,6 @@
 using System;
 using l2l.Data.Model;
+using Microsoft.EntityFrameworkCore;
 
 namespace l2l.Data.Tests
 {
@@ -12,7 +13,18 @@ namespace l2l.Data.Tests
             //AP
             factory = new L2lDbContextFactory();
             var db=GetNewL2lDbContext();
-            db.Database.EnsureCreated();
+
+            if (factory.IsInMemoryDb())
+            {
+                //in memory db
+                db.Database.EnsureCreated();
+            }
+            else
+            {
+                //working only in file db!!!!
+                //https://github.com/aspnet/EntityFrameworkCore/issues/9842
+                db.Database.Migrate();
+            }
         }
 
         public L2lDbContext GetNewL2lDbContext()
@@ -23,6 +35,7 @@ namespace l2l.Data.Tests
         public void Dispose()
         {
             var db=GetNewL2lDbContext();
+            factory.Dispose();
             db.Database.EnsureDeleted();
             db.Dispose();
         }

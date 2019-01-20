@@ -3,6 +3,7 @@ using Xunit;
 using l2l.Data.Model;
 using l2l.Data.Repository;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 
 namespace l2l.Data.Tests
 {
